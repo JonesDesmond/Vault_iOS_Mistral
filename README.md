@@ -91,6 +91,32 @@ then open http://localhost:4173/Vault_iOS_Mistral/ to test the production build.
    privacy screen), backups (plain or AES-256-encrypted), Excel/CSV export,
    "keep data permanently", example data.
 
+## Test it on an iPhone 6s (or any iPhone/iPad, iOS 12+)
+
+A true App Store `.ipa` would need an Apple Developer account and publishing — which your
+privacy rules forbid — so on iOS the app runs as an **installed home-screen web app (PWA)**,
+which on a 6s works fully offline. The build targets ES2017 and falls back to pure-JS crypto
+where iOS lacks WebCrypto (plain http), so it runs on iOS 15.8 (the 6s maximum) and newer.
+
+On your Windows PC, serve the app on your Wi-Fi network:
+
+```powershell
+npm run dev -- --host
+```
+
+Then on the iPhone 6s (same Wi-Fi): open Safari and go to
+`http://<your-PC's-LAN-IP>:5173/Vault_iOS_Mistral/` (the IP is shown in the PowerShell output).
+Tap **Share → Add to Home Screen** — the app icon appears and opens fullscreen.
+
+What to expect on a 6s:
+
+- Everything works: items, calendar, limits, assistants, backup, PIN lock.
+- Receipt OCR runs on-device but is slower on the A9 chip (allow ~10–30 s per photo).
+- iOS does not support the "share from other apps into the app" target — use the 📷 button in the Inbox instead.
+- Face ID / Touch ID unlock needs iOS 16.4+, so on a 6s the PIN lock is used.
+- "Keep data permanently" is supported on iOS from version 17; on iOS 15 the button explains this.
+- Encrypted backups (AES-256-GCM) work even over plain http thanks to the bundled pure-JS fallback.
+
 ## Later: free hosting (not published)
 
 `.github/workflows/pages.yml` is prepared for GitHub Pages but is **manual-only**

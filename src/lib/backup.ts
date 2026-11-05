@@ -3,6 +3,7 @@
 
 import { db } from '../db';
 import type { VaultItem, PaymentMethod, Settings, InboxFile } from '../types';
+import { deriveKeyBytes, aesGcmEncrypt, aesGcmDecrypt, utf8, fromUtf8 } from './crypto';
 
 const MAGIC = 'RVLT1';
 
@@ -34,17 +35,7 @@ async function b64ToBuf(b64: string): Promise<ArrayBuffer> {
   return bytes.buffer;
 }
 
-async function deriveKey(password: string, salt: BufferSource): Promise<CryptoKey> {
-  const enc = new TextEncoder();
-  const baseKey = await crypto.subtle.importKey('raw', enc.encode(password), 'PBKDF2', false, ['deriveKey']);
-  return crypto.subtle.deriveKey(
-    { name: 'PBKDF2', salt, iterations: 210000, hash: 'SHA-256' },
-    baseKey,
-    { name: 'AES-GCM', length: 256 },
-    false,
-    ['encrypt', 'decrypt']
-  );
-}
+
 
 async function serialize(): Promise<string> {
   const [items, paymentMethods, settings, inbox] = await Promise.all([
@@ -96,16 +87,15 @@ export async function exportBackupPlain(): Promise<Blob> {
 export async function exportBackupEncrypted(password: string): Promise<Blob> {
   const salt = crypto.getRandomValues(new Uint8Array(16));
   const iv = crypto.getRandomValues(new Uint8Array(12));
-  const key = await deriveKey(password, salt);
-  const data = new TextEncoder().encode(await serialize());
-  const cipher = await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, key, data);
+  const key = await deriveKeyBytes(password, salt);
+  const cipher = await aesGcmEncrypt(key, iv, utf8(await serialize()));
   const envelope = JSON.stringify({
     magic: MAGIC,
     kdf: 'PBKDF2-SHA256-210000',
     cipher: 'AES-256-GCM',
     salt: await bufToB64(salt.buffer),
     iv: await bufToB64(iv.buffer),
-    data: await bufToB64(cipher)
+    data: await bufToB64(cipher.buffer as ArrayBuffer)
   });
   return new Blob([envelope], { type: 'application/json' });
 }
@@ -118,10 +108,11 @@ export async function importBackup(file: Blob, password?: string): Promise<void>
     const env = JSON.parse(trimmed);
     if (env.magic !== MAGIC) throw new Error('Unknown encrypted backup format');
     if (!password) throw new Error('This backup is encrypted — enter the password');
-    const key = await deriveKey(password, new Uint8Array(await b64ToBuf(env.salt)));
-    const cipher = await b64ToBuf(env.data);
-    const plain = await crypto.subtle.decrypt({ name: 'AES-GCM', iv: new Uint8Array(await b64ToBuf(env.iv)) }, key, cipher);
-    json = new TextDecoder().decode(plain);
+    const key = await deriveKeyBytes(password, new Uint8Array(await b64ToBuf(env.salt)));
+    const cipher = new Uint8Array(await b64ToBuf(env.data));
+    const iv = new Uint8Array(await b64ToBuf(env.iv));
+    const plain = await aesGcmDecrypt(key, iv, cipher);
+    json = fromUtf8(plain);
   } else {
     if (password) throw new Error('This backup is not encrypted');
     json = trimmed;

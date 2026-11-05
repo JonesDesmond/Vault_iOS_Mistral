@@ -69,8 +69,11 @@ export default defineConfig({
       devOptions: { enabled: false }
     })
   ],
+  // es2017 so the built app also runs on iPhone 6s (iOS 15.8, older WebKit/JSCore).
+  esbuild: { target: 'es2017' },
+  optimizeDeps: { esbuildOptions: { target: 'es2017' } },
   build: {
-    target: 'es2020',
+    target: 'es2017',
     chunkSizeWarningLimit: 1600
   }
 });

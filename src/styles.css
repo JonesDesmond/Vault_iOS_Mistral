@@ -31,6 +31,8 @@
 
 * { box-sizing: border-box; }
 html, body { margin: 0; padding: 0; }
+body { -webkit-tap-highlight-color: transparent; }
+button, a, .cal-day { touch-action: manipulation; }
 body {
   background: var(--bg);
   color: var(--text);
@@ -39,13 +41,14 @@ body {
   line-height: 1.45;
 }
 
-.app { min-height: 100vh; display: flex; flex-direction: column; }
+.app { min-height: 100vh; min-height: 100dvh; display: flex; flex-direction: column; }
 
 .topbar {
   position: sticky; top: 0; z-index: 20;
   background: var(--surface); border-bottom: 1px solid var(--border);
   display: flex; flex-wrap: wrap; align-items: center; gap: 8px;
   padding: 8px 12px;
+  padding-top: calc(8px + env(safe-area-inset-top, 0px));
 }
 .brand { font-weight: 700; margin-right: 8px; white-space: nowrap; }
 .nav { display: flex; gap: 4px; overflow-x: auto; flex: 1; }
@@ -55,7 +58,26 @@ body {
 }
 .nav a.active { background: var(--surface-2); color: var(--text); font-weight: 600; }
 
-.content { width: 100%; max-width: 1080px; margin: 0 auto; padding: 12px 12px 96px; }
+.content { width: 100%; max-width: 1080px; margin: 0 auto; padding: 12px 12px 130px; }
+
+/* Phones: navigation becomes a bottom bar (like a mobile app), safe-area aware. */
+@media (max-width: 760px) {
+  .topbar { justify-content: center; }
+  .nav {
+    position: fixed; left: 0; right: 0; bottom: 0; z-index: 30;
+    background: var(--surface); border-top: 1px solid var(--border);
+    border-bottom: none; padding: 6px 8px calc(8px + env(safe-area-inset-bottom, 0px));
+    box-shadow: 0 -2px 10px rgba(0, 0, 0, .12);
+  }
+  .nav a { flex: 1; text-align: center; font-size: 11px; padding: 6px 2px; }
+  .nav a span { display: block; font-size: 18px; }
+  .install-hint { margin: 8px 8px 0; position: sticky; top: 0; }
+}
+
+/* Prevent iOS auto-zoom on input focus: inputs must be at least 16px on touch devices. */
+@media (pointer: coarse) {
+  input, select, textarea, .btn { font-size: 16px; }
+}
 
 @media (min-width: 900px) {
   .topbar { padding: 10px 24px; }
@@ -190,8 +212,9 @@ input:focus, select:focus, textarea:focus { outline: 2px solid var(--accent); ou
 
 /* Lock screen */
 .lockscreen {
-  min-height: 100vh; display: flex; align-items: center; justify-content: center;
+  min-height: 100vh; min-height: 100dvh; display: flex; align-items: center; justify-content: center;
   background: var(--bg); padding: 16px;
+  padding-bottom: calc(16px + env(safe-area-inset-bottom, 0px));
 }
 .lock-card {
   background: var(--surface); border: 1px solid var(--border); border-radius: 16px;

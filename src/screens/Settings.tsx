@@ -8,12 +8,9 @@ import { exportBackupPlain, exportBackupEncrypted, importBackup, downloadBlob } 
 import { exportXLSX, exportCSV } from '../lib/export';
 import { webauthnAvailable, enrollWebAuthn, unlockWithWebAuthn } from '../lib/webauthn';
 import { loadExampleData, removeExampleData, hasExampleData } from '../lib/seed';
+import { hashPin } from '../lib/crypto';
+import { storagePersistSupported, isIOS } from '../lib/compat';
 import { Field } from '../components/ui';
-
-async function sha256Hex(s: string): Promise<string> {
-  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(s));
-  return [...new Uint8Array(buf)].map(b => b.toString(16).padStart(2, '0')).join('');
-}
 
 export default function SettingsScreen() {
   const settings = useLiveQuery(() => getSettings());
@@ -43,13 +40,14 @@ export default function SettingsScreen() {
   const savePin = async () => {
     if (pin.length < 4 || pin.length > 6 || pin !== pin2) { say('PIN must be 4–6 digits and match.'); return; }
     const salt = uid();
-    await update({ lockEnabled: true, pinSalt: salt, pinHash: await sha256Hex(salt + ':' + pin) });
+    await update({ lockEnabled: true, pinSalt: salt, pinHash: await hashPin(salt, pin) });
     setPin(''); setPin2('');
     say('🔒 App lock enabled.');
   };
 
   const addMethod = async () => {
     if (!pmName.trim() || !/^\d{4}$/.test(pmLast4)) { say('Name required and exactly the LAST 4 digits only (never a full number).'); return; }
+    if (pmType === 'card' && pmExpiry && !/^\d{4}-(0[1-9]|1[0-2])$/.test(pmExpiry)) { say('Expiry month must look like 2027-08.'); return; }
     await db.paymentMethods.add({ id: uid(), name: pmName.trim(), last4: pmLast4, type: pmType, expiryMonth: pmType === 'card' && pmExpiry ? pmExpiry : undefined });
     setPmName(''); setPmLast4(''); setPmExpiry('');
     say('Payment method saved (name + last 4 only).');
@@ -165,7 +163,7 @@ export default function SettingsScreen() {
               <option value="card">Card</option><option value="bank">Bank account (direct debit)</option><option value="cash">Cash</option><option value="other">Other</option>
             </select>
           </Field>
-          {pmType === 'card' && <Field label="Card expiry month"><input type="month" value={pmExpiry} onChange={e => setPmExpiry(e.target.value)} /></Field>}
+          {pmType === 'card' && <Field label="Card expiry month (YYYY-MM)" hint="e.g. 2027-08 — the card is valid until the end of that month"><input type="text" inputMode="numeric" placeholder="2027-08" pattern="\d{4}-\d{2}" value={pmExpiry} onChange={e => setPmExpiry(e.target.value)} /></Field>}
         </div>
         <button className="btn" onClick={addMethod}>➕ Add payment method</button>
       </div>
@@ -177,9 +175,9 @@ export default function SettingsScreen() {
           <>
             <p>Lock is <b>enabled</b>.</p>
             <div className="btn-row">
-              <button className="btn danger" onClick={async () => { const pw = prompt('Enter current PIN to disable the lock:'); if (pw && settings.pinSalt && await sha256Hex(settings.pinSalt + ':' + pw) === settings.pinHash) { await update({ lockEnabled: false, pinHash: undefined, pinSalt: undefined }); say('Lock disabled.'); } else if (pw) say('Wrong PIN.'); }}>Disable lock</button>
+              <button className="btn danger" onClick={async () => { const pw = prompt('Enter current PIN to disable the lock:'); if (pw && settings.pinSalt && await hashPin(settings.pinSalt, pw) === settings.pinHash) { await update({ lockEnabled: false, pinHash: undefined, pinSalt: undefined }); say('Lock disabled.'); } else if (pw) say('Wrong PIN.'); }}>Disable lock</button>
               <button className="btn" onClick={async () => {
-                if (!(await webauthnAvailable())) { say('No platform authenticator (fingerprint/Face ID) available on this device.'); return; }
+                if (!(await webauthnAvailable())) { say(isIOS() ? 'Face ID / Touch ID unlock needs iOS 16.4+ — on iPhone 6s (iOS 15) use the PIN.' : 'No platform authenticator (fingerprint/Face ID) available on this device.'); return; }
                 try { await update({ webauthnCredentialId: await enrollWebAuthn(), webauthnEnabled: true }); say('👆 Fingerprint / Face ID enrolled.'); }
                 catch (e) { say('Enrolment cancelled/failed: ' + (e as Error).message); }
               }}>{settings.webauthnEnabled ? 'Re-enroll fingerprint / Face ID' : '👆 Enable fingerprint / Face ID'}</button>
@@ -210,7 +208,11 @@ export default function SettingsScreen() {
           <button className="btn" onClick={() => exportCSV(items)}>📄 Export CSV</button>
         </div>
         <div className="btn-row">
-          <button className="btn" onClick={async () => { const ok = await navigator.storage.persist?.(); say(ok ? '✅ Browser asked to keep data permanently.' : 'Browser refused — data may be cleared under storage pressure.'); }}>🛡 Ask browser to keep data permanently</button>
+          <button className="btn" onClick={async () => {
+            if (!storagePersistSupported()) { say('Not supported on this browser (iOS Safari supports it from iOS 17) — data is still kept while you use the app.'); return; }
+            const ok = await navigator.storage.persist();
+            say(ok ? '✅ Browser asked to keep data permanently.' : 'Browser refused — data may be cleared under storage pressure.');
+          }}>🛡 Ask browser to keep data permanently</button>
         </div>
         <p className="muted">Last backup: {settings.lastBackupAt ? new Date(settings.lastBackupAt).toLocaleString() : 'never'}</p>
       </div>

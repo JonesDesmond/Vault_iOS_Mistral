@@ -3,6 +3,8 @@ import { useLiveQuery } from 'dexie-react-hooks';
 import { getSettings } from './db';
 import { collectSharedFiles } from './lib/share';
 import { webauthnAvailable, unlockWithWebAuthn } from './lib/webauthn';
+import { hashPin } from './lib/crypto';
+import { isIOS, isStandalone, storagePersistSupported } from './lib/compat';
 import Overview from './screens/Overview';
 import CalendarScreen from './screens/Calendar';
 import Items from './screens/Items';
@@ -29,11 +31,6 @@ export function go(r: Route): void {
   window.location.hash = h;
 }
 
-async function sha256Hex(s: string): Promise<string> {
-  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(s));
-  return [...new Uint8Array(buf)].map(b => b.toString(16).padStart(2, '0')).join('');
-}
-
 function LockScreen({ settings, onUnlock }: { settings: Awaited<ReturnType<typeof getSettings>>; onUnlock: () => void }) {
   const [pin, setPin] = useState('');
   const [error, setError] = useState('');
@@ -45,7 +42,7 @@ function LockScreen({ settings, onUnlock }: { settings: Awaited<ReturnType<typeo
 
   const submit = async () => {
     if (!settings.pinSalt || !settings.pinHash) return onUnlock();
-    const hash = await sha256Hex(settings.pinSalt + ':' + pin);
+    const hash = await hashPin(settings.pinSalt, pin);
     if (hash === settings.pinHash) {
       sessionStorage.setItem('rv-unlocked', '1');
       onUnlock();
@@ -111,10 +108,12 @@ export default function App() {
         window.location.hash = '#/inbox';
       });
     }
-    if ('storage' in navigator && navigator.storage.persist) {
+    if (storagePersistSupported()) {
       navigator.storage.persist().catch(() => {});
     }
   }, []);
+
+  const showInstallHint = isIOS() && !isStandalone();
 
   useEffect(() => {
     if (!settings) return;
@@ -150,6 +149,9 @@ export default function App() {
 
   return (
     <div className="app">
+      {showInstallHint && (
+        <div className="banner info install-hint">📱 On iPhone: tap <b>Share</b> → <b>Add to Home Screen</b> to install Receipt Vault as an app.</div>
+      )}
       <header className="topbar">
         <span className="brand">🧾 Receipt Vault</span>
         <nav className="nav">

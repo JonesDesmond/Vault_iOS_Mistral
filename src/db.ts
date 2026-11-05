@@ -36,6 +36,4 @@ export async function getSettings(): Promise<Settings> {
   return s;
 }
 
-export function uid(): string {
-  return crypto.randomUUID();
-}
+export { uid } from './lib/compat';
