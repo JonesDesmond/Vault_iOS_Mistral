@@ -20,20 +20,24 @@ export class VaultDB extends Dexie {
 
 export const db = new VaultDB();
 
+const DEFAULT_SETTINGS: Settings = {
+  id: 'settings',
+  currency: 'EUR',
+  language: 'en',
+  limits: [],
+  lockEnabled: false,
+  webauthnEnabled: false,
+  theme: 'system'
+};
+
+// Read-only: safe to call inside useLiveQuery (Dexie forbids writes in live queries).
 export async function getSettings(): Promise<Settings> {
-  let s = await db.settings.get('settings');
-  if (!s) {
-    s = {
-      id: 'settings',
-      currency: 'EUR',
-      limits: [],
-      lockEnabled: false,
-      webauthnEnabled: false,
-      theme: 'system'
-    };
-    await db.settings.put(s);
-  }
-  return s;
+  return (await db.settings.get('settings')) ?? DEFAULT_SETTINGS;
+}
+
+// Creates the settings row if missing. Call once on app start, outside live queries.
+export async function ensureSettings(): Promise<void> {
+  if (!(await db.settings.get('settings'))) await db.settings.put({ ...DEFAULT_SETTINGS });
 }
 
 export { uid } from './lib/compat';

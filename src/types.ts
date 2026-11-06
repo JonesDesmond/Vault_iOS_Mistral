@@ -125,6 +125,7 @@ export interface Settings {
   id: 'settings';
   monthlyIncome?: number;
   currency: string;
+  language: string;
   limits: SpendingLimit[];
   lockEnabled: boolean;
   pinSalt?: string;

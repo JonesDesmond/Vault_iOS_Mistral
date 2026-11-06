@@ -7,12 +7,13 @@ import { checkItemAgainstLimits } from '../lib/limits';
 import { shrinkImage, makeThumb } from '../lib/images';
 import { Field } from '../components/ui';
 import { go } from '../App';
+import { t } from '../lib/i18n';
 
 const INTERVALS = [
-  { v: 'week', label: 'Weekly' },
-  { v: 'month', label: 'Monthly' },
-  { v: 'quarter', label: 'Quarterly' },
-  { v: 'year', label: 'Yearly' }
+  { v: 'week', labelKey: 'Weekly' },
+  { v: 'month', labelKey: 'Monthly' },
+  { v: 'quarter', labelKey: 'Quarterly' },
+  { v: 'year', labelKey: 'Yearly' }
 ];
 
 export default function ItemForm({ kind, editId }: { kind?: ItemKind; editId?: string }) {
@@ -77,9 +78,9 @@ export default function ItemForm({ kind, editId }: { kind?: ItemKind; editId?: s
 
   const save = async () => {
     if (!form || !items || !settings) return;
-    if (!form.title || !String(form.title).trim()) { setError('Please give it a title.'); return; }
-    if (['purchase', 'subscription', 'contract'].includes(form.kind) && (form.price === '' || isNaN(Number(form.price)))) { setError('Please enter a price.'); return; }
-    if (form.kind === 'installment' && (form.rateAmount === '' || isNaN(Number(form.rateAmount)))) { setError('Please enter the rate amount.'); return; }
+    if (!form.title || !String(form.title).trim()) { setError(t('Please give it a title.')); return; }
+    if (['purchase', 'subscription', 'contract'].includes(form.kind) && (form.price === '' || isNaN(Number(form.price)))) { setError(t('Please enter a price.')); return; }
+    if (form.kind === 'installment' && (form.rateAmount === '' || isNaN(Number(form.rateAmount)))) { setError(t('Please enter the rate amount.')); return; }
 
     const numeric = (v: any) => (v === '' || v == null ? undefined : Number(v));
     const old = editId ? items.find(i => i.id === editId) : undefined;
@@ -109,33 +110,33 @@ export default function ItemForm({ kind, editId }: { kind?: ItemKind; editId?: s
     go({ name: 'item', id: item.id });
   };
 
-  if (!form || !methods || !settings) return <p className="muted">Loading…</p>;
+  if (!form || !methods || !settings) return <p className="muted">{t('Loading…')}</p>;
   const currency = form.currency ?? settings.currency;
 
   return (
     <div>
-      <h1>{editId ? 'Edit' : 'New'} {form.kind}</h1>
+      <h1>{t(editId ? 'Edit' : 'New')} {form.kind}</h1>
       {error && <div className="banner danger" role="alert">{error}</div>}
       {warnings.length > 0 && (
         <div className="banner warn" role="alert">
           {warnings.map((w, i) => <div key={i}>⚠ {w}</div>)}
-          <div className="muted">You can still save — the warning is only shown.</div>
+          <div className="muted">{t('You can still save — the warning is only shown.')}</div>
         </div>
       )}
 
-      <Field label="Title">
+      <Field label={t('Title')}>
         <input value={form.title} onChange={e => set('title', e.target.value)} placeholder="e.g. Amazon Prime" />
       </Field>
 
       <div className="field-row">
-        <Field label="Category">
+        <Field label={t('Category')}>
           <select value={form.category} onChange={e => set('category', e.target.value)}>
             {CATEGORIES.map(c => <option key={c}>{c}</option>)}
           </select>
         </Field>
-        <Field label="Paid with">
+        <Field label={t('Paid with')}>
           <select value={form.paymentMethodId ?? ''} onChange={e => set('paymentMethodId', e.target.value || undefined)}>
-            <option value="">— none —</option>
+            <option value="">{t('— none —')}</option>
             {methods.map(m => <option key={m.id} value={m.id}>{m.name} ••{m.last4}</option>)}
           </select>
         </Field>
@@ -144,44 +145,43 @@ export default function ItemForm({ kind, editId }: { kind?: ItemKind; editId?: s
       {form.kind === 'purchase' && (
         <>
           <div className="field-row">
-            <Field label="Price"><input type="number" step="0.01" min="0" value={form.price} onChange={e => set('price', e.target.value)} /></Field>
-            <Field label="Currency"><input value={currency} onChange={e => set('currency', e.target.value.toUpperCase().slice(0, 3))} /></Field>
+            <Field label={t('Price')}><input type="number" step="0.01" min="0" value={form.price} onChange={e => set('price', e.target.value)} /></Field>
+            <Field label={t('Currency')}><input value={currency} onChange={e => set('currency', e.target.value.toUpperCase().slice(0, 3))} /></Field>
           </div>
           <div className="field-row">
-            <Field label="Purchase date"><input type="date" value={form.purchaseDate} onChange={e => set('purchaseDate', e.target.value)} /></Field>
-            <Field label="Return window (days)"><input type="number" min="0" value={form.returnWindowDays} onChange={e => set('returnWindowDays', e.target.value)} /></Field>
+            <Field label={t('Purchase date')}><input type="date" value={form.purchaseDate} onChange={e => set('purchaseDate', e.target.value)} /></Field>
+            <Field label={t('Return window (days)')}><input type="number" min="0" value={form.returnWindowDays} onChange={e => set('returnWindowDays', e.target.value)} /></Field>
           </div>
           <div className="field-row">
-            <Field label="Legal guarantee (months)"><input type="number" min="0" value={form.legalGuaranteeMonths} onChange={e => set('legalGuaranteeMonths', e.target.value)} /></Field>
-            <Field label="Manufacturer warranty (months)"><input type="number" min="0" value={form.warrantyMonths} onChange={e => set('warrantyMonths', e.target.value)} /></Field>
+            <Field label={t('Legal guarantee (months)')}><input type="number" min="0" value={form.legalGuaranteeMonths} onChange={e => set('legalGuaranteeMonths', e.target.value)} /></Field>
+            <Field label={t('Manufacturer warranty (months)')}><input type="number" min="0" value={form.warrantyMonths} onChange={e => set('warrantyMonths', e.target.value)} /></Field>
           </div>
           <div className="field-row">
-            <Field label="Extended warranty (months)"><input type="number" min="0" value={form.extendedWarrantyMonths} onChange={e => set('extendedWarrantyMonths', e.target.value)} /></Field>
-            <Field label="Serial number"><input value={form.serialNumber ?? ''} onChange={e => set('serialNumber', e.target.value)} /></Field>
+            <Field label={t('Extended warranty (months)')}><input type="number" min="0" value={form.extendedWarrantyMonths} onChange={e => set('extendedWarrantyMonths', e.target.value)} /></Field>
+            <Field label={t('Serial number')}><input value={form.serialNumber ?? ''} onChange={e => set('serialNumber', e.target.value)} /></Field>
           </div>
-          <Field label="Order number"><input value={form.orderNumber ?? ''} onChange={e => set('orderNumber', e.target.value)} /></Field>
+          <Field label={t('Order number')}><input value={form.orderNumber ?? ''} onChange={e => set('orderNumber', e.target.value)} /></Field>
         </>
       )}
 
       {form.kind === 'installment' && (
         <>
           <div className="field-row">
-            <Field label="Rate amount"><input type="number" step="0.01" min="0" value={form.rateAmount} onChange={e => set('rateAmount', e.target.value)} /></Field>
-            <Field label="Currency"><input value={currency} onChange={e => set('currency', e.target.value.toUpperCase().slice(0, 3))} /></Field>
+            <Field label={t('Rate amount')}><input type="number" step="0.01" min="0" value={form.rateAmount} onChange={e => set('rateAmount', e.target.value)} /></Field>
+            <Field label={t('Currency')}><input value={currency} onChange={e => set('currency', e.target.value.toUpperCase().slice(0, 3))} /></Field>
           </div>
-          <Field label="Interval">
+          <Field label={t('Interval')}>
             <select value={form.interval} onChange={e => set('interval', e.target.value)}>
-              {INTERVALS.map(i => <option key={i.v} value={i.v}>{i.label}</option>)}
+              {INTERVALS.map(i => <option key={i.v} value={i.v}>{t(i.labelKey)}</option>)}
             </select>
           </Field>
-          <p className="muted">Either enter the full plan, or just what is left plus the next payment date:</p>
           <div className="field-row">
-            <Field label="Total amount"><input type="number" step="0.01" min="0" value={form.totalAmount} onChange={e => set('totalAmount', e.target.value)} /></Field>
-            <Field label="First payment date"><input type="date" value={form.firstPaymentDate} onChange={e => set('firstPaymentDate', e.target.value)} /></Field>
+            <Field label={t('Total amount')}><input type="number" step="0.01" min="0" value={form.totalAmount} onChange={e => set('totalAmount', e.target.value)} /></Field>
+            <Field label={t('First payment date')}><input type="date" value={form.firstPaymentDate} onChange={e => set('firstPaymentDate', e.target.value)} /></Field>
           </div>
           <div className="field-row">
-            <Field label="What's left (amount)"><input type="number" step="0.01" min="0" value={form.remainingAmount} onChange={e => set('remainingAmount', e.target.value)} /></Field>
-            <Field label="Next payment date"><input type="date" value={form.nextPaymentDate} onChange={e => set('nextPaymentDate', e.target.value)} /></Field>
+            <Field label={t("What's left (amount)")}><input type="number" step="0.01" min="0" value={form.remainingAmount} onChange={e => set('remainingAmount', e.target.value)} /></Field>
+            <Field label={t('Next payment date')}><input type="date" value={form.nextPaymentDate} onChange={e => set('nextPaymentDate', e.target.value)} /></Field>
           </div>
         </>
       )}
@@ -189,20 +189,20 @@ export default function ItemForm({ kind, editId }: { kind?: ItemKind; editId?: s
       {form.kind === 'subscription' && (
         <>
           <div className="field-row">
-            <Field label="Price"><input type="number" step="0.01" min="0" value={form.price} onChange={e => set('price', e.target.value)} /></Field>
-            <Field label="Currency"><input value={currency} onChange={e => set('currency', e.target.value.toUpperCase().slice(0, 3))} /></Field>
+            <Field label={t('Price')}><input type="number" step="0.01" min="0" value={form.price} onChange={e => set('price', e.target.value)} /></Field>
+            <Field label={t('Currency')}><input value={currency} onChange={e => set('currency', e.target.value.toUpperCase().slice(0, 3))} /></Field>
           </div>
           <div className="field-row">
-            <Field label="Interval">
+            <Field label={t('Interval')}>
               <select value={form.interval} onChange={e => set('interval', e.target.value)}>
-                {INTERVALS.map(i => <option key={i.v} value={i.v}>{i.label}</option>)}
+                {INTERVALS.map(i => <option key={i.v} value={i.v}>{t(i.labelKey)}</option>)}
               </select>
             </Field>
-            <Field label="First charge date"><input type="date" value={form.firstChargeDate} onChange={e => set('firstChargeDate', e.target.value)} /></Field>
+            <Field label={t('First payment date')}><input type="date" value={form.firstChargeDate} onChange={e => set('firstChargeDate', e.target.value)} /></Field>
           </div>
           <div className="field-row">
-            <Field label="Free trial ends (optional)"><input type="date" value={form.trialEnds ?? ''} onChange={e => set('trialEnds', e.target.value)} /></Field>
-            <Field label="Minimum term (months, optional)"><input type="number" min="0" value={form.minTermMonths ?? ''} onChange={e => set('minTermMonths', e.target.value)} /></Field>
+            <Field label={t('Free trial ends (optional)')}><input type="date" value={form.trialEnds ?? ''} onChange={e => set('trialEnds', e.target.value)} /></Field>
+            <Field label={t('Minimum term (months, optional)')}><input type="number" min="0" value={form.minTermMonths ?? ''} onChange={e => set('minTermMonths', e.target.value)} /></Field>
           </div>
         </>
       )}
@@ -210,24 +210,24 @@ export default function ItemForm({ kind, editId }: { kind?: ItemKind; editId?: s
       {form.kind === 'contract' && (
         <>
           <div className="field-row">
-            <Field label="Price"><input type="number" step="0.01" min="0" value={form.price} onChange={e => set('price', e.target.value)} /></Field>
-            <Field label="Currency"><input value={currency} onChange={e => set('currency', e.target.value.toUpperCase().slice(0, 3))} /></Field>
+            <Field label={t('Price')}><input type="number" step="0.01" min="0" value={form.price} onChange={e => set('price', e.target.value)} /></Field>
+            <Field label={t('Currency')}><input value={currency} onChange={e => set('currency', e.target.value.toUpperCase().slice(0, 3))} /></Field>
           </div>
           <div className="field-row">
-            <Field label="Interval">
+            <Field label={t('Interval')}>
               <select value={form.interval} onChange={e => set('interval', e.target.value)}>
-                {INTERVALS.map(i => <option key={i.v} value={i.v}>{i.label}</option>)}
+                {INTERVALS.map(i => <option key={i.v} value={i.v}>{t(i.labelKey)}</option>)}
               </select>
             </Field>
-            <Field label="Start date"><input type="date" value={form.startDate} onChange={e => set('startDate', e.target.value)} /></Field>
+            <Field label={t('Start date')}><input type="date" value={form.startDate} onChange={e => set('startDate', e.target.value)} /></Field>
           </div>
           <div className="field-row">
-            <Field label="Minimum term (months)"><input type="number" min="1" value={form.minTermMonths} onChange={e => set('minTermMonths', e.target.value)} /></Field>
-            <Field label="Renewal period (months)"><input type="number" min="1" value={form.renewalPeriodMonths} onChange={e => set('renewalPeriodMonths', e.target.value)} /></Field>
+            <Field label={t('Minimum term (months)')}><input type="number" min="1" value={form.minTermMonths} onChange={e => set('minTermMonths', e.target.value)} /></Field>
+            <Field label={t('Renewal period (months)')}><input type="number" min="1" value={form.renewalPeriodMonths} onChange={e => set('renewalPeriodMonths', e.target.value)} /></Field>
           </div>
           <div className="field-row">
-            <Field label="Notice period (months)"><input type="number" min="0" value={form.noticePeriodMonths} onChange={e => set('noticePeriodMonths', e.target.value)} /></Field>
-            <Field label="First charge date (optional)"><input type="date" value={form.firstChargeDate ?? ''} onChange={e => set('firstChargeDate', e.target.value)} /></Field>
+            <Field label={t('Notice period (months)')}><input type="number" min="0" value={form.noticePeriodMonths} onChange={e => set('noticePeriodMonths', e.target.value)} /></Field>
+            <Field label={t('First charge date (optional)')}><input type="date" value={form.firstChargeDate ?? ''} onChange={e => set('firstChargeDate', e.target.value)} /></Field>
           </div>
         </>
       )}
@@ -235,40 +235,40 @@ export default function ItemForm({ kind, editId }: { kind?: ItemKind; editId?: s
       {form.kind === 'document' && (
         <>
           <div className="field-row">
-            <Field label="Expiry date"><input type="date" value={form.expiryDate} onChange={e => set('expiryDate', e.target.value)} /></Field>
-            <Field label="Remind me X days before"><input type="number" min="0" value={form.remindDaysBefore} onChange={e => set('remindDaysBefore', e.target.value)} /></Field>
+            <Field label={t('Expiry date')}><input type="date" value={form.expiryDate} onChange={e => set('expiryDate', e.target.value)} /></Field>
+            <Field label={t('Remind me X days before')}><input type="number" min="0" value={form.remindDaysBefore} onChange={e => set('remindDaysBefore', e.target.value)} /></Field>
           </div>
           <div className="field-row">
-            <Field label={'Month only (e.g. card 2026-11 = valid until 30 Nov 2026)'}>
+            <Field label={t('Month only (valid until end of month)')}>
               <select value={form.expiryMonthOnly ? '1' : '0'} onChange={e => {
                 const monthOnly = e.target.value === '1';
                 set('expiryMonthOnly', monthOnly);
                 if (monthOnly && /^\d{4}-\d{2}-\d{2}$/.test(form.expiryDate)) set('expiryDate', form.expiryDate.slice(0, 7));
                 if (!monthOnly && /^\d{4}-\d{2}$/.test(form.expiryDate)) set('expiryDate', form.expiryDate + '-01');
               }}>
-                <option value="0">Full date</option>
-                <option value="1">Month only (valid until end of month)</option>
+                <option value="0">{t('Expiry date')}</option>
+                <option value="1">{t('Month only (valid until end of month)')}</option>
               </select>
             </Field>
-            <Field label="Repeats every N months (optional)"><input type="number" min="0" value={form.repeatMonths ?? ''} onChange={e => set('repeatMonths', e.target.value)} /></Field>
+            <Field label={t('Repeats every N months (optional)')}><input type="number" min="0" value={form.repeatMonths ?? ''} onChange={e => set('repeatMonths', e.target.value)} /></Field>
           </div>
         </>
       )}
 
-      <h3>Cancellation info (optional)</h3>
+      <h3>{t('Cancellation info (optional)')}</h3>
       <div className="field-row">
-        <Field label="Customer number"><input value={form.account?.customerNumber ?? ''} onChange={e => setAccount('customerNumber', e.target.value)} /></Field>
-        <Field label="Contract number"><input value={form.account?.contractNumber ?? ''} onChange={e => setAccount('contractNumber', e.target.value)} /></Field>
+        <Field label={t('Customer number')}><input value={form.account?.customerNumber ?? ''} onChange={e => setAccount('customerNumber', e.target.value)} /></Field>
+        <Field label={t('Contract number')}><input value={form.account?.contractNumber ?? ''} onChange={e => setAccount('contractNumber', e.target.value)} /></Field>
       </div>
       <div className="field-row">
-        <Field label="Cancellation website"><input type="url" value={form.account?.cancelUrl ?? ''} onChange={e => setAccount('cancelUrl', e.target.value)} /></Field>
-        <Field label="Cancellation email"><input type="email" value={form.account?.cancelEmail ?? ''} onChange={e => setAccount('cancelEmail', e.target.value)} /></Field>
+        <Field label={t('Cancellation website')}><input type="url" value={form.account?.cancelUrl ?? ''} onChange={e => setAccount('cancelUrl', e.target.value)} /></Field>
+        <Field label={t('Cancellation email')}><input type="email" value={form.account?.cancelEmail ?? ''} onChange={e => setAccount('cancelEmail', e.target.value)} /></Field>
       </div>
-      <Field label="Cancellation phone"><input value={form.account?.cancelPhone ?? ''} onChange={e => setAccount('cancelPhone', e.target.value)} /></Field>
+      <Field label={t('Cancellation phone')}><input value={form.account?.cancelPhone ?? ''} onChange={e => setAccount('cancelPhone', e.target.value)} /></Field>
 
-      <Field label="Notes"><textarea value={form.notes ?? ''} onChange={e => set('notes', e.target.value)} /></Field>
+      <Field label={t('Notes')}><textarea value={form.notes ?? ''} onChange={e => set('notes', e.target.value)} /></Field>
 
-      <Field label="Receipt photos / PDFs (large photos are shrunk automatically, on-device)">
+      <Field label={t('Receipt photos / PDFs (large photos are shrunk automatically, on-device)')}>
         <input type="file" accept="image/*,application/pdf" multiple onChange={e => addFiles(e.target.files)} />
       </Field>
       {attachments.length > 0 && (
@@ -283,8 +283,8 @@ export default function ItemForm({ kind, editId }: { kind?: ItemKind; editId?: s
       )}
 
       <div className="btn-row">
-        <button className="btn primary" onClick={save}>💾 Save</button>
-        <button className="btn" onClick={() => go(editId ? { name: 'item', id: editId } : { name: 'items' })}>Cancel</button>
+        <button className="btn primary" onClick={save}>💾 {t('Save')}</button>
+        <button className="btn" onClick={() => go(editId ? { name: 'item', id: editId } : { name: 'items' })}>{t('Cancel')}</button>
       </div>
     </div>
   );

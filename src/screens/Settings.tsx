@@ -10,6 +10,7 @@ import { webauthnAvailable, enrollWebAuthn, unlockWithWebAuthn } from '../lib/we
 import { loadExampleData, removeExampleData, hasExampleData } from '../lib/seed';
 import { hashPin } from '../lib/crypto';
 import { storagePersistSupported, isIOS } from '../lib/compat';
+import { LANGS, t } from '../lib/i18n';
 import { Field } from '../components/ui';
 
 export default function SettingsScreen() {
@@ -31,7 +32,7 @@ export default function SettingsScreen() {
   const [limitAmount, setLimitAmount] = useState('');
   const [limitPercent, setLimitPercent] = useState('');
 
-  if (!settings || !items || !methods) return <p className="muted">Loading…</p>;
+  if (!settings || !items || !methods) return <p className="muted">{t('Loading…')}</p>;
 
   const say = (m: string) => { setMsg(m); setTimeout(() => setMsg(''), 4000); };
   const update = (patch: Partial<typeof settings>) => db.settings.put({ ...settings, ...patch });
@@ -95,25 +96,32 @@ export default function SettingsScreen() {
 
   return (
     <div>
-      <h1>⚙️ Settings</h1>
+      <h1>⚙️ {t('Settings')}</h1>
       {msg && <div className="banner info" role="status">{msg}</div>}
 
       <div className="card">
-        <h3>Basics</h3>
+        <h3>{t('Basics')}</h3>
         <div className="field-row">
-          <Field label="Monthly income (€)"><input type="number" min="0" step="0.01" value={settings.monthlyIncome ?? ''} onChange={e => update({ monthlyIncome: e.target.value === '' ? undefined : Number(e.target.value) })} /></Field>
-          <Field label="Currency"><input value={settings.currency} maxLength={3} onChange={e => update({ currency: e.target.value.toUpperCase().slice(0, 3) })} /></Field>
+          <Field label={`${t('Monthly income')} (${settings.currency})`}><input type="number" min="0" step="0.01" value={settings.monthlyIncome ?? ''} onChange={e => update({ monthlyIncome: e.target.value === '' ? undefined : Number(e.target.value) })} /></Field>
+          <Field label={t('Currency')}><input value={settings.currency} maxLength={3} onChange={e => update({ currency: e.target.value.toUpperCase().slice(0, 3) })} /></Field>
         </div>
-        <Field label="Theme">
-          <select value={settings.theme} onChange={e => update({ theme: e.target.value as any })}>
-            <option value="system">System</option><option value="light">Light</option><option value="dark">Dark</option>
-          </select>
-        </Field>
+        <div className="field-row">
+          <Field label={t('Theme')}>
+            <select value={settings.theme} onChange={e => update({ theme: e.target.value as any })}>
+              <option value="system">{t('System')}</option><option value="light">{t('Light')}</option><option value="dark">{t('Dark')}</option>
+            </select>
+          </Field>
+          <Field label={t('Language')}>
+            <select value={settings.language || 'en'} onChange={e => update({ language: e.target.value })}>
+              {LANGS.map(l => <option key={l.code} value={l.code}>{l.label}</option>)}
+            </select>
+          </Field>
+        </div>
       </div>
 
       <div className="card">
-        <h3>Spending limits</h3>
-        <p className="muted">Warn at 70 / 80 / 90 / 100% — on the overview and before saving an item. A fixed amount or a % of your income.</p>
+        <h3>{t('Spending limits')}</h3>
+        <p className="muted">70 / 80 / 90 / 100%</p>
         {settings.limits.map(l => (
           <div className="event-row" key={l.id} style={{ marginBottom: 6 }}>
             <span className="event-title">{l.label} — {l.scope}{l.category ? ` (${l.category})` : ''} — {l.mode === 'fixed' ? `${l.amount} ${settings.currency}` : `${l.percent}% of income`}</span>
@@ -121,112 +129,111 @@ export default function SettingsScreen() {
           </div>
         ))}
         <div className="field-row">
-          <Field label="Label"><input value={limitLabel} onChange={e => setLimitLabel(e.target.value)} placeholder="e.g. All spending" /></Field>
-          <Field label="Applies to">
+          <Field label={t('Label')}><input value={limitLabel} onChange={e => setLimitLabel(e.target.value)} placeholder={t('Label')} /></Field>
+          <Field label={t('Applies to')}>
             <select value={limitScope} onChange={e => setLimitScope(e.target.value as any)}>
-              <option value="all">All payments</option><option value="subscriptions">Subscriptions</option><option value="contracts">Contracts</option><option value="installments">Installments</option><option value="category">One category</option>
+              <option value="all">{t('All payments')}</option><option value="subscriptions">{t('Subscriptions')}</option><option value="contracts">{t('Contracts')}</option><option value="installments">{t('Installments')}</option><option value="category">{t('One category')}</option>
             </select>
           </Field>
         </div>
         {limitScope === 'category' && (
-          <Field label="Category"><select value={limitCategory} onChange={e => setLimitCategory(e.target.value)}>{CATEGORIES.map(c => <option key={c}>{c}</option>)}</select></Field>
+          <Field label={t('Category')}><select value={limitCategory} onChange={e => setLimitCategory(e.target.value)}>{CATEGORIES.map(c => <option key={c}>{c}</option>)}</select></Field>
         )}
         <div className="field-row">
-          <Field label="Type">
+          <Field label={t('Type')}>
             <select value={limitMode} onChange={e => setLimitMode(e.target.value as any)}>
-              <option value="fixed">Fixed amount</option><option value="percentOfIncome">% of income</option>
+              <option value="fixed">{t('Fixed amount')}</option><option value="percentOfIncome">{t('% of income')}</option>
             </select>
           </Field>
           {limitMode === 'fixed'
-            ? <Field label="Amount"><input type="number" min="0" step="0.01" value={limitAmount} onChange={e => setLimitAmount(e.target.value)} /></Field>
-            : <Field label="Percent of income"><input type="number" min="0" max="100" value={limitPercent} onChange={e => setLimitPercent(e.target.value)} /></Field>}
+            ? <Field label={t('Amount')}><input type="number" min="0" step="0.01" value={limitAmount} onChange={e => setLimitAmount(e.target.value)} /></Field>
+            : <Field label={t('Percent of income')}><input type="number" min="0" max="100" value={limitPercent} onChange={e => setLimitPercent(e.target.value)} /></Field>}
         </div>
-        <button className="btn" onClick={addLimit}>➕ Add limit</button>
+        <button className="btn" onClick={addLimit}>➕ {t('Add limit')}</button>
       </div>
 
       <div className="card">
-        <h3>Payment methods</h3>
-        <p className="muted">Only a name and the last 4 digits are stored — never a full number.</p>
+        <h3>{t('Payment methods')}</h3>
+        <p className="muted">{t('Only a name and the last 4 digits are stored — never a full number.')}</p>
         {methods.map(m => (
           <div className="event-row" key={m.id} style={{ marginBottom: 6 }}>
-            <span className="event-title">{m.name} ••{m.last4} ({m.type}){m.type === 'card' && m.expiryMonth ? ` — valid until end of ${m.expiryMonth}` : ''}</span>
+            <span className="event-title">{m.name} ••{m.last4} ({m.type}){m.type === 'card' && m.expiryMonth ? ` — ${t('Valid until:')} ${m.expiryMonth}` : ''}</span>
             <button className="btn danger icon" onClick={() => db.paymentMethods.delete(m.id)}>🗑</button>
           </div>
         ))}
         <div className="field-row">
-          <Field label="Name"><input value={pmName} onChange={e => setPmName(e.target.value)} placeholder="e.g. Visa card" /></Field>
-          <Field label="Last 4 digits only"><input inputMode="numeric" maxLength={4} value={pmLast4} onChange={e => setPmLast4(e.target.value.replace(/\D/g, '').slice(0, 4))} placeholder="1234" /></Field>
+          <Field label={t('Name')}><input value={pmName} onChange={e => setPmName(e.target.value)} placeholder="e.g. Visa" /></Field>
+          <Field label={t('Last 4 digits only')}><input inputMode="numeric" maxLength={4} value={pmLast4} onChange={e => setPmLast4(e.target.value.replace(/\D/g, '').slice(0, 4))} placeholder="1234" /></Field>
         </div>
         <div className="field-row">
-          <Field label="Type">
+          <Field label={t('Type')}>
             <select value={pmType} onChange={e => setPmType(e.target.value as any)}>
-              <option value="card">Card</option><option value="bank">Bank account (direct debit)</option><option value="cash">Cash</option><option value="other">Other</option>
+              <option value="card">{t('Card')}</option><option value="bank">{t('Bank account (direct debit)')}</option><option value="cash">{t('Cash')}</option><option value="other">{t('Other')}</option>
             </select>
           </Field>
-          {pmType === 'card' && <Field label="Card expiry month (YYYY-MM)" hint="e.g. 2027-08 — the card is valid until the end of that month"><input type="text" inputMode="numeric" placeholder="2027-08" pattern="\d{4}-\d{2}" value={pmExpiry} onChange={e => setPmExpiry(e.target.value)} /></Field>}
+          {pmType === 'card' && <Field label={t('Card expiry month (YYYY-MM)')}><input type="text" inputMode="numeric" placeholder="2027-08" pattern="\d{4}-\d{2}" value={pmExpiry} onChange={e => setPmExpiry(e.target.value)} /></Field>}
         </div>
-        <button className="btn" onClick={addMethod}>➕ Add payment method</button>
+        <button className="btn" onClick={addMethod}>➕ {t('Add payment method')}</button>
       </div>
 
       <div className="card">
-        <h3>🔒 App lock</h3>
-        <p className="muted">PIN (and optionally fingerprint/Face ID). This is a privacy screen, not encryption.</p>
+        <h3>🔒 {t('App lock')}</h3>
+        <p className="muted">PIN</p>
         {settings.lockEnabled ? (
           <>
-            <p>Lock is <b>enabled</b>.</p>
+            <p>{t('Lock is enabled.')}</p>
             <div className="btn-row">
-              <button className="btn danger" onClick={async () => { const pw = prompt('Enter current PIN to disable the lock:'); if (pw && settings.pinSalt && await hashPin(settings.pinSalt, pw) === settings.pinHash) { await update({ lockEnabled: false, pinHash: undefined, pinSalt: undefined }); say('Lock disabled.'); } else if (pw) say('Wrong PIN.'); }}>Disable lock</button>
+              <button className="btn danger" onClick={async () => { const pw = prompt(t('Enter current PIN to disable the lock:') ?? ''); if (pw && settings.pinSalt && await hashPin(settings.pinSalt, pw) === settings.pinHash) { await update({ lockEnabled: false, pinHash: undefined, pinSalt: undefined }); say(t('Lock disabled.')); } else if (pw) say(t('Wrong PIN.')); }}>{t('Disable lock')}</button>
               <button className="btn" onClick={async () => {
                 if (!(await webauthnAvailable())) { say(isIOS() ? 'Face ID / Touch ID unlock needs iOS 16.4+ — on iPhone 6s (iOS 15) use the PIN.' : 'No platform authenticator (fingerprint/Face ID) available on this device.'); return; }
                 try { await update({ webauthnCredentialId: await enrollWebAuthn(), webauthnEnabled: true }); say('👆 Fingerprint / Face ID enrolled.'); }
                 catch (e) { say('Enrolment cancelled/failed: ' + (e as Error).message); }
-              }}>{settings.webauthnEnabled ? 'Re-enroll fingerprint / Face ID' : '👆 Enable fingerprint / Face ID'}</button>
-              {settings.webauthnEnabled && <button className="btn" onClick={() => update({ webauthnEnabled: false, webauthnCredentialId: undefined })}>Disable biometric</button>}
+              }}>{settings.webauthnEnabled ? '👆 ' + t('Enable fingerprint / Face ID') : '👆 ' + t('Enable fingerprint / Face ID')}</button>
+              {settings.webauthnEnabled && <button className="btn" onClick={() => update({ webauthnEnabled: false, webauthnCredentialId: undefined })}>{t('Disable biometric')}</button>}
             </div>
           </>
         ) : (
           <>
             <div className="field-row">
-              <Field label="Choose PIN (4–6 digits)"><input type="password" inputMode="numeric" maxLength={6} value={pin} onChange={e => setPin(e.target.value.replace(/\D/g, '').slice(0, 6))} /></Field>
-              <Field label="Repeat PIN"><input type="password" inputMode="numeric" maxLength={6} value={pin2} onChange={e => setPin2(e.target.value.replace(/\D/g, '').slice(0, 6))} /></Field>
+              <Field label={t('Choose PIN (4–6 digits)')}><input type="password" inputMode="numeric" maxLength={6} value={pin} onChange={e => setPin(e.target.value.replace(/\D/g, '').slice(0, 6))} /></Field>
+              <Field label={t('Repeat PIN')}><input type="password" inputMode="numeric" maxLength={6} value={pin2} onChange={e => setPin2(e.target.value.replace(/\D/g, '').slice(0, 6))} /></Field>
             </div>
-            <button className="btn primary" onClick={savePin}>Enable app lock</button>
+            <button className="btn primary" onClick={savePin}>{t('Enable app lock')}</button>
           </>
         )}
       </div>
 
       <div className="card">
-        <h3>💾 Backup & export</h3>
-        <p className="muted">Backups stay on your device — you decide where to put the file. Encrypted backups use AES-256 with your password.</p>
+        <h3>💾 {t('Backup & export')}</h3>
         <div className="btn-row">
-          <button className="btn" onClick={() => doBackup(false)}>💾 Backup (plain file)</button>
-          <button className="btn" onClick={() => doBackup(true)}>🔐 Backup (encrypted, AES-256)</button>
-          <label className="btn">♻️ Restore from backup<input type="file" accept=".json,application/json" style={{ display: 'none' }} onChange={e => { const f = e.target.files?.[0]; if (f) doRestore(f); e.target.value = ''; }} /></label>
+          <button className="btn" onClick={() => doBackup(false)}>💾 {t('Backup (plain file)')}</button>
+          <button className="btn" onClick={() => doBackup(true)}>🔐 {t('Backup (encrypted, AES-256)')}</button>
+          <label className="btn">♻️ {t('Restore from backup')}<input type="file" accept=".json,application/json" style={{ display: 'none' }} onChange={e => { const f = e.target.files?.[0]; if (f) doRestore(f); e.target.value = ''; }} /></label>
         </div>
         <div className="btn-row">
-          <button className="btn" onClick={() => exportXLSX(items)}>📊 Export Excel (.xlsx)</button>
-          <button className="btn" onClick={() => exportCSV(items)}>📄 Export CSV</button>
+          <button className="btn" onClick={() => exportXLSX(items)}>📊 {t('Export Excel (.xlsx)')}</button>
+          <button className="btn" onClick={() => exportCSV(items)}>📄 {t('Export CSV')}</button>
         </div>
         <div className="btn-row">
           <button className="btn" onClick={async () => {
-            if (!storagePersistSupported()) { say('Not supported on this browser (iOS Safari supports it from iOS 17) — data is still kept while you use the app.'); return; }
+            if (!storagePersistSupported()) { say(isIOS() ? 'iOS 17+' : '—'); return; }
             const ok = await navigator.storage.persist();
-            say(ok ? '✅ Browser asked to keep data permanently.' : 'Browser refused — data may be cleared under storage pressure.');
-          }}>🛡 Ask browser to keep data permanently</button>
+            say(ok ? '✅' : '⚠');
+          }}>🛡 {t('Ask browser to keep data permanently')}</button>
         </div>
-        <p className="muted">Last backup: {settings.lastBackupAt ? new Date(settings.lastBackupAt).toLocaleString() : 'never'}</p>
+        <p className="muted">{t('Last backup:')} {settings.lastBackupAt ? new Date(settings.lastBackupAt).toLocaleString() : t('never')}</p>
       </div>
 
       <div className="card">
-        <h3>🧪 Example data</h3>
+        <h3>🧪 {t('Example data')}</h3>
         <div className="btn-row">
-          <button className="btn" onClick={async () => { await loadExampleData(); setExHas(true); say('Example data loaded — you can remove it again here.'); }}>Load example data</button>
-          {exHas && <button className="btn danger" onClick={async () => { const n = await removeExampleData(); setExHas(await hasExampleData()); say(`Removed ${n} example items.`); }}>Remove example data</button>}
+          <button className="btn" onClick={async () => { await loadExampleData(); setExHas(true); say('✅'); }}>{t('Load example data')}</button>
+          {exHas && <button className="btn danger" onClick={async () => { await removeExampleData(); setExHas(await hasExampleData()); say('🗑'); }}>{t('Remove example data')}</button>}
         </div>
       </div>
 
       <div className="card">
-        <h3>🔐 Privacy</h3>
+        <h3>🔐 {t('Privacy')}</h3>
         <p className="muted">
           Receipt Vault stores everything in your browser's local database on this device only.
           There is no server, no account and no tracking. Receipt scanning (OCR) uses an engine bundled

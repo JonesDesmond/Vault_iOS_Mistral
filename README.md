@@ -117,6 +117,49 @@ What to expect on a 6s:
 - "Keep data permanently" is supported on iOS from version 17; on iOS 15 the button explains this.
 - Encrypted backups (AES-256-GCM) work even over plain http thanks to the bundled pure-JS fallback.
 
+## Languages
+
+Settings → **Language**: English, Deutsch, Français, Italiano, Ελληνικά.
+(Or append `?lang=de` to the URL once.) Untranslated strings fall back to English.
+
+## Screenshots
+
+Real screenshots of the app (captured headless at phone width 375px and desktop, light and dark):
+
+- [Overview, phone, light](docs/screenshots/01-overview-phone-light.png)
+- [Overview, phone, dark](docs/screenshots/02-overview-phone-dark.png)
+- [Calendar, phone](docs/screenshots/03-calendar-phone.png)
+- [Items list, phone](docs/screenshots/04-items-phone.png)
+- [Item detail, phone](docs/screenshots/05-item-detail-phone.png)
+- [New item form, phone](docs/screenshots/06-new-item-phone.png)
+- [Overview, desktop, dark](docs/screenshots/07-overview-desktop-dark.png)
+- [Settings in German, phone](docs/screenshots/08-settings-german-phone.png)
+- [Calendar, desktop](docs/screenshots/09-calendar-desktop.png)
+
+Regenerate them yourself: `npm run build && npm run screenshots`
+(needs `npx playwright install chromium` once).
+
+## Native iOS app (Xcode project, ready to build on a Mac)
+
+The same code is wrapped as a native iOS app with Capacitor (the `ios/` folder is generated and committed).
+On a Mac with Xcode installed:
+
+```bash
+npm install
+```
+
+```bash
+npm run ios
+```
+
+```bash
+npm run ios:open
+```
+
+Then in Xcode: select your iPhone as the run destination and press Run (▶). Testing on your own
+device with a free personal Apple ID is possible — only App Store distribution needs the paid
+$99/year developer program, which we are not using.
+
 ## Later: free hosting (not published)
 
 `.github/workflows/pages.yml` is prepared for GitHub Pages but is **manual-only**

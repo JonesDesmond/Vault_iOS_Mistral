@@ -2,9 +2,10 @@ import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import { VitePWA } from 'vite-plugin-pwa';
 
-// GitHub Pages project site for JonesDesmond/Vault_iOS_Mistral.
+// GitHub Pages project site for JonesDesmond/Vault_iOS_Mistral (override with VAULT_BASE).
+// The native iOS/Android app (Capacitor) builds with the default base '/'.
 // Nothing is published automatically: the Pages workflow is manual-only (workflow_dispatch).
-const base = '/Vault_iOS_Mistral/';
+const base = process.env.VAULT_BASE ?? '/Vault_iOS_Mistral/';
 
 export default defineConfig({
   base,
@@ -17,13 +18,13 @@ export default defineConfig({
       registerType: 'autoUpdate',
       includeAssets: ['icons/*.png', 'ocr/**/*'],
       manifest: {
-        id: '/Vault_iOS_Mistral/',
+        id: base,
         name: 'Receipt Vault',
         short_name: 'Receipt Vault',
         description: 'Keeps track of purchases, subscriptions, contracts, installments and expiring documents. 100% on-device.',
         lang: 'en',
-        start_url: '/Vault_iOS_Mistral/',
-        scope: '/Vault_iOS_Mistral/',
+        start_url: base,
+        scope: base,
         display: 'standalone',
         orientation: 'any',
         background_color: '#0f172a',
@@ -35,7 +36,7 @@ export default defineConfig({
           { src: 'icons/icon-maskable-512.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' }
         ],
         share_target: {
-          action: '/Vault_iOS_Mistral/share-target',
+          action: `${base}share-target`,
           method: 'POST',
           enctype: 'multipart/form-data',
           params: {

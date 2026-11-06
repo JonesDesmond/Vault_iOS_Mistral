@@ -5,8 +5,9 @@ import { deadlinesNext90 } from '../lib/events';
 import { evaluateAllLimits } from '../lib/limits';
 import { addMonths, endOfMonth, formatDate, formatMonthYear, parseISODate, startOfMonth, toISODate, todayISO } from '../lib/dates';
 import { formatMoney, round2, INTERVALS_PER_YEAR } from '../lib/money';
-import { Tile, Badge, KIND_LABEL } from '../components/ui';
+import { Tile, Badge, kindLabel } from '../components/ui';
 import { go } from '../App';
+import { t } from '../lib/i18n';
 
 export default function Overview() {
   const items = useLiveQuery(() => db.items.toArray());
@@ -14,7 +15,7 @@ export default function Overview() {
   const settings = useLiveQuery(() => getSettings());
   const inboxCount = useLiveQuery(() => db.inbox.count());
 
-  if (!items || !methods || !settings) return <p className="muted">Loading…</p>;
+  if (!items || !methods || !settings) return <p className="muted">{t('Loading…')}</p>;
 
   const today = todayISO();
   const now = parseISODate(today);
@@ -54,39 +55,39 @@ export default function Overview() {
 
   return (
     <div>
-      <h1>Overview</h1>
+      <h1>{t('Overview')}</h1>
 
       {worst.map(w => (
         <div key={w.limit.id} className={`banner ${w.level === 'over' || w.level === 'warn100' ? 'danger' : 'warn'}`} role="alert">
-          {w.message} — spent {formatMoney(w.spent, settings.currency)} of {formatMoney(w.budget, settings.currency)} this month.
+          {w.message} — {t('spent {spent} of {budget} this month.', { spent: formatMoney(w.spent, settings.currency), budget: formatMoney(w.budget, settings.currency) })}
         </div>
       ))}
-      {inboxCount ? <div className="banner info">📥 {inboxCount} file{inboxCount === 1 ? '' : 's'} waiting in the <a href="#/inbox">inbox</a>.</div> : null}
+      {inboxCount ? <div className="banner info">📥 {inboxCount} {t('files waiting in the inbox.')} <a href="#/inbox">{t('Inbox')}</a></div> : null}
       {backupAge === null || backupAge > 90 ? (
-        <div className="banner info">💾 {backupAge === null ? 'No backup yet' : `Last backup ${backupAge} days ago`} — make a backup in <a href="#/settings">Settings</a>.</div>
+        <div className="banner info">💾 {backupAge === null ? t('No backup yet') : t('Last backup {n} days ago', { n: backupAge })} — <a href="#/settings">{t('make a backup in Settings.')}</a></div>
       ) : null}
 
       <div className="tiles">
-        <Tile label="Fixed costs / month" value={formatMoney(fixedMonth, settings.currency)} />
-        <Tile label="Fixed costs / year" value={formatMoney(round2(fixedMonth * 12), settings.currency)} />
-        <Tile label="% of income" value={income > 0 ? `${round2(fixedMonth / income * 100)}%` : '—'} sub={income > 0 ? `of ${formatMoney(income, settings.currency)}` : 'set income in Settings'} />
-        <Tile label="Money left / month" value={income > 0 ? formatMoney(round2(income - fixedMonth - monthSpend(items.filter(i => i.kind === 'installment'), year, month0) * 0), settings.currency) : '—'} sub={income > 0 ? 'income minus fixed costs' : ''} />
-        <Tile label="Installments left" value={formatMoney(installmentsLeft, settings.currency)} sub={`${items.filter(i => i.kind === 'installment' && !installmentStatus(i, today).done).length} active plans`} />
-        <Tile label="Due in 30 days" value={due30.length} sub={`${due30.filter(e => e.kind !== 'payment').length} deadlines`} tone={due30.some(e => e.urgency === 'overdue') ? 'danger' : due30.some(e => e.urgency === 'today' || e.urgency === 'soon') ? 'warn' : undefined} />
+        <Tile label={t('Fixed costs / month')} value={formatMoney(fixedMonth, settings.currency)} />
+        <Tile label={t('Fixed costs / year')} value={formatMoney(round2(fixedMonth * 12), settings.currency)} />
+        <Tile label={t('% of income')} value={income > 0 ? `${round2(fixedMonth / income * 100)}%` : '—'} sub={income > 0 ? formatMoney(income, settings.currency) : t('set income in Settings')} />
+        <Tile label={t('Money left / month')} value={income > 0 ? formatMoney(round2(income - fixedMonth), settings.currency) : '—'} sub={income > 0 ? t('income minus fixed costs') : ''} />
+        <Tile label={t('Installments left')} value={formatMoney(installmentsLeft, settings.currency)} sub={`${items.filter(i => i.kind === 'installment' && !installmentStatus(i, today).done).length} ${t('active plans')}`} />
+        <Tile label={t('Due in 30 days')} value={due30.length} sub={`${due30.filter(e => e.kind !== 'payment').length} ${t('deadlines')}`} tone={due30.some(e => e.urgency === 'overdue') ? 'danger' : due30.some(e => e.urgency === 'today' || e.urgency === 'soon') ? 'warn' : undefined} />
       </div>
 
-      <div className="section-title"><h2>Next 90 days</h2><a className="btn" href="#/calendar">📅 Calendar</a></div>
+      <div className="section-title"><h2>{t('Next 90 days')}</h2><a className="btn" href="#/calendar">📅 {t('Calendar')}</a></div>
       <div className="list">
         {deadlinesNext90(items, methods, today).slice(0, 10).map((e, i) => (
           <div className="event-row" key={i}>
             <span className="event-date">{formatDate(e.date)}</span>
-            <span className="event-title"><Badge tone={e.urgency}>{e.urgencyLabel}</Badge> {KIND_LABEL[items.find(x => x.id === e.itemId)?.kind ?? ''] ?? ''} {e.title}</span>
+            <span className="event-title"><Badge tone={e.urgency}>{e.urgencyLabel}</Badge> {kindLabel(items.find(x => x.id === e.itemId)?.kind ?? '')} {e.title}</span>
           </div>
         ))}
-        {deadlinesNext90(items, methods, today).length === 0 && <p className="muted">Nothing due in the next 90 days. 🎉</p>}
+        {deadlinesNext90(items, methods, today).length === 0 && <p className="muted">{t('Nothing due in the next 90 days.')} 🎉</p>}
       </div>
 
-      <div className="section-title"><h2>Last 12 months {limitBudget > 0 && <span className="muted">(dashed line = limit {formatMoney(limitBudget, settings.currency)})</span>}</h2></div>
+      <div className="section-title"><h2>{t('Last 12 months')} {limitBudget > 0 && <span className="muted">(— — = {formatMoney(limitBudget, settings.currency)})</span>}</h2></div>
       <div className="card">
         <div className="chart">
           {limitBudget > 0 && (
@@ -107,9 +108,9 @@ export default function Overview() {
         <div className="chart-x">{months.map((m, i) => <span key={i}>{m.label}</span>)}</div>
       </div>
 
-      <div className="section-title"><h2>This month by category</h2></div>
+      <div className="section-title"><h2>{t('This month by category')}</h2></div>
       <div className="card">
-        {cats.length === 0 && <p className="muted">No spending this month yet.</p>}
+        {cats.length === 0 && <p className="muted">{t('No spending this month yet.')}</p>}
         {cats.map(([cat, amt]) => (
           <div className="cat-row" key={cat}>
             <span>{cat}</span>
@@ -121,15 +122,15 @@ export default function Overview() {
         ))}
       </div>
 
-      <div className="section-title"><h2>Possible savings</h2><a className="btn" href="#/review">📊 Review</a></div>
+      <div className="section-title"><h2>{t('Possible savings')}</h2><a className="btn" href="#/review">📊 {t('Review')}</a></div>
       <div className="card">
         {savingsYear > 0
-          ? <p>Subscriptions you rated <b>rarely</b> or <b>never</b> cost <b>{formatMoney(savingsYear, settings.currency)}/year</b>. Rate them in Review.</p>
-          : <p className="muted">Rate your subscriptions in Review to see what you could save per year.</p>}
+          ? <p>{t('Subscriptions you rated rarely or never cost {amount}/year. Rate them in Review.', { amount: formatMoney(savingsYear, settings.currency) })}</p>
+          : <p className="muted">{t('Rate your subscriptions in Review to see what you could save per year.')}</p>}
       </div>
 
-      <p className="muted">Today: {formatDate(today)} · All data stays on this device.</p>
-      <button className="btn" onClick={() => go({ name: 'items' })}>➕ Add an item</button>
+      <p className="muted">{t('Today:')} {formatDate(today)} · {t('All data stays on this device.')}</p>
+      <button className="btn" onClick={() => go({ name: 'items' })}>➕ {t('Add item')}</button>
     </div>
   );
 }

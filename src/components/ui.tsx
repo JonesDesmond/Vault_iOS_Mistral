@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import { t } from '../lib/i18n';
 
 export function Field({ label, children, hint }: { label: string; children: ReactNode; hint?: string }) {
   return (
@@ -16,7 +17,7 @@ export function Modal({ title, onClose, children }: { title: string; onClose: ()
       <div className="modal" onClick={e => e.stopPropagation()} role="dialog" aria-label={title}>
         <div className="modal-head">
           <h2>{title}</h2>
-          <button className="btn icon" onClick={onClose} aria-label="Close">✕</button>
+          <button className="btn icon" onClick={onClose} aria-label={t('Close')}>✕</button>
         </div>
         <div className="modal-body">{children}</div>
       </div>
@@ -38,7 +39,8 @@ export function Tile({ label, value, sub, tone }: { label: string; value: ReactN
   );
 }
 
-export const KIND_LABEL: Record<string, string> = {
-  purchase: '🛍 Purchase', installment: '💳 Installment', subscription: '🔁 Subscription',
-  contract: '📄 Contract', document: '🪪 Document'
-};
+const KIND_ICONS: Record<string, string> = { purchase: '🛍', installment: '💳', subscription: '🔁', contract: '📄', document: '🪪' };
+
+export function kindLabel(kind: string): string {
+  return `${KIND_ICONS[kind] ?? '🧾'} ${t({ purchase: 'Purchase', installment: 'Installment', subscription: 'Subscription', contract: 'Contract', document: 'Document' }[kind] ?? kind)}`;
+}

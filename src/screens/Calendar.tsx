@@ -6,12 +6,13 @@ import { addMonths, daysInMonth, formatDate, formatMonthYear, mondayWeekday, par
 import { formatMoney, round2 } from '../lib/money';
 import { downloadICS } from '../lib/ics';
 import { Modal, Badge } from '../components/ui';
+import { t } from '../lib/i18n';
 
 const KIND_FILTERS = [
-  { key: 'payment', label: '💳 Payments', test: (e: CalEvent) => e.kind === 'payment' },
-  { key: 'deadline', label: '⏰ Deadlines', test: (e: CalEvent) => e.kind === 'deadline' },
-  { key: 'expiry', label: '⌛ Expiries', test: (e: CalEvent) => e.kind === 'expiry' },
-  { key: 'reminder', label: '🔔 Reminders', test: (e: CalEvent) => e.kind === 'reminder' }
+  { key: 'payment', icon: '💳', labelKey: 'Payments', test: (e: CalEvent) => e.kind === 'payment' },
+  { key: 'deadline', icon: '⏰', labelKey: 'Deadlines', test: (e: CalEvent) => e.kind === 'deadline' },
+  { key: 'expiry', icon: '⌛', labelKey: 'Expiries', test: (e: CalEvent) => e.kind === 'expiry' },
+  { key: 'reminder', icon: '🔔', labelKey: 'Reminders', test: (e: CalEvent) => e.kind === 'reminder' }
 ];
 
 const EVENT_ICON: Record<string, string> = { payment: '💳', deadline: '⏰', expiry: '⌛', reminder: '🔔' };
@@ -46,7 +47,7 @@ export default function CalendarScreen() {
     return () => window.removeEventListener('keydown', onKey);
   }, []);
 
-  if (!items || !methods || !settings) return <p className="muted">Loading…</p>;
+  if (!items || !methods || !settings) return <p className="muted">{t('Loading…')}</p>;
 
   const monthTotal = round2(events.filter(e => e.kind === 'payment').reduce((a, e) => a + (e.amount ?? 0), 0));
 
@@ -74,27 +75,27 @@ export default function CalendarScreen() {
       <div className="cal-head">
         <h1 style={{ margin: 0 }}>{formatMonthYear(cursor)}</h1>
         <div className="btn-row" style={{ margin: 0 }}>
-          <button className="btn icon" onClick={() => setCursor(addMonths(cursor, -1))} aria-label="Previous month">◀</button>
-          <button className="btn" onClick={() => setCursor(startOfMonth(parseISODate(today)))}>Today</button>
-          <button className="btn icon" onClick={() => setCursor(addMonths(cursor, 1))} aria-label="Next month">▶</button>
-          <button className="btn" onClick={exportICS}>📤 Export .ics</button>
+          <button className="btn icon" onClick={() => setCursor(addMonths(cursor, -1))} aria-label={t('Previous month')}>◀</button>
+          <button className="btn" onClick={() => setCursor(startOfMonth(parseISODate(today)))}>{t('Today')}</button>
+          <button className="btn icon" onClick={() => setCursor(addMonths(cursor, 1))} aria-label={t('Next month')}>▶</button>
+          <button className="btn" onClick={exportICS}>📤 {t('Export .ics')}</button>
         </div>
       </div>
 
-      <div className="filters" role="group" aria-label="Filters">
+      <div className="filters" role="group" aria-label={t('Filters')}>
         {KIND_FILTERS.map(f => (
           <button key={f.key} className={filters.has(f.key) ? 'active' : ''} onClick={() => {
             setFilters(prev => { const n = new Set(prev); n.has(f.key) ? n.delete(f.key) : n.add(f.key); return n; });
-          }}>{f.label}</button>
+          }}>{f.icon} {t(f.labelKey)}</button>
         ))}
       </div>
 
       <div className="tabs">
-        <button className={`btn ${mode === 'grid' ? 'primary' : ''}`} onClick={() => setMode('grid')}>Month grid</button>
-        <button className={`btn ${mode === 'list' ? 'primary' : ''}`} onClick={() => setMode('list')}>Month list</button>
+        <button className={`btn ${mode === 'grid' ? 'primary' : ''}`} onClick={() => setMode('grid')}>{t('Month grid')}</button>
+        <button className={`btn ${mode === 'list' ? 'primary' : ''}`} onClick={() => setMode('list')}>{t('Month list')}</button>
       </div>
 
-      <p className="muted">Payments this month: <b>{formatMoney(monthTotal, settings.currency)}</b> · use ← → arrow keys to change month</p>
+      <p className="muted">{t('Payments this month:')} <b>{formatMoney(monthTotal, settings.currency)}</b> · {t('use ← → arrow keys to change month')}</p>
 
       {mode === 'grid' && (
         <div>
@@ -129,7 +130,7 @@ export default function CalendarScreen() {
         <div className="list">
           {[...eventsByDay.entries()].sort((a, b) => a[0].localeCompare(b[0])).map(([date, evs]) => (
             <div key={date}>
-              <h3>{formatDate(date)} {date === today && <Badge tone="today">⏰ Today</Badge>}</h3>
+              <h3>{formatDate(date)} {date === today && <Badge tone="today">⏰ {t('Today')}</Badge>}</h3>
               {evs.map((e, j) => (
                 <div className="event-row" key={j}>
                   <span className="event-title"><span aria-hidden>{EVENT_ICON[e.kind]}</span> {e.title}{e.amount != null && <> — <b>{formatMoney(e.amount, e.currency ?? settings.currency)}</b></>}</span>
@@ -138,7 +139,7 @@ export default function CalendarScreen() {
               ))}
             </div>
           ))}
-          {events.length === 0 && <p className="muted">No events this month.</p>}
+          {events.length === 0 && <p className="muted">{t('No events this month.')}</p>}
         </div>
       )}
 
@@ -151,7 +152,7 @@ export default function CalendarScreen() {
                 <Badge tone={e.urgency}>{e.urgencyLabel}</Badge>
               </div>
             ))}
-            {(eventsByDay.get(day) ?? []).length === 0 && <p className="muted">Nothing on this day.</p>}
+            {(eventsByDay.get(day) ?? []).length === 0 && <p className="muted">{t('Nothing on this day.')}</p>}
           </div>
         </Modal>
       )}

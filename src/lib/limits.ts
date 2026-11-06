@@ -3,6 +3,7 @@
 import type { VaultItem, SpendingLimit } from '../types';
 import { monthSpend } from './calc';
 import { round2 } from './money';
+import { t } from './i18n';
 
 export type LimitLevel = 'ok' | 'warn70' | 'warn80' | 'warn90' | 'warn100' | 'over';
 
@@ -46,11 +47,11 @@ export function evaluateLimit(limit: SpendingLimit, spent: number, monthlyIncome
   const pctText = budget > 0 ? `${Math.round(pct)}%` : '—';
   let message: string;
   switch (level) {
-    case 'over': message = `⛔ Limit reached or exceeded: ${pctText} of "${limit.label}" used`; break;
-    case 'warn90': message = `⚠ 90% of limit "${limit.label}" reached`; break;
-    case 'warn80': message = `⚠ 80% of limit "${limit.label}" reached`; break;
-    case 'warn70': message = `⚠ 70% of limit "${limit.label}" reached`; break;
-    default: message = `ℹ Within limit "${limit.label}" (${pctText})`;
+    case 'over': message = `⛔ ${t('Over limit: {pct} of "{label}" used', { pct: pctText, label: limit.label })}`; break;
+    case 'warn90': message = `⚠ ${t('90% of limit "{label}" reached', { label: limit.label })}`; break;
+    case 'warn80': message = `⚠ ${t('80% of limit "{label}" reached', { label: limit.label })}`; break;
+    case 'warn70': message = `⚠ ${t('70% of limit "{label}" reached', { label: limit.label })}`; break;
+    default: message = `ℹ ${t('Within limit "{label}" ({pct})', { label: limit.label, pct: pctText })}`;
   }
   return { limit, spent: round2(spent), budget: round2(budget), pct: round2(pct), level, message };
 }

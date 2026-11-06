@@ -1,10 +1,11 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
-import { getSettings } from './db';
+import { db, ensureSettings, getSettings } from './db';
 import { collectSharedFiles } from './lib/share';
 import { webauthnAvailable, unlockWithWebAuthn } from './lib/webauthn';
 import { hashPin } from './lib/crypto';
 import { isIOS, isStandalone, storagePersistSupported } from './lib/compat';
+import { setLang, t } from './lib/i18n';
 import Overview from './screens/Overview';
 import CalendarScreen from './screens/Calendar';
 import Items from './screens/Items';
@@ -47,7 +48,7 @@ function LockScreen({ settings, onUnlock }: { settings: Awaited<ReturnType<typeo
       sessionStorage.setItem('rv-unlocked', '1');
       onUnlock();
     } else {
-      setError('Wrong PIN. Try again.');
+      setError(t('Wrong PIN. Try again.'));
       setPin('');
     }
   };
@@ -57,24 +58,24 @@ function LockScreen({ settings, onUnlock }: { settings: Awaited<ReturnType<typeo
       <div className="lock-card">
         <div className="lock-icon" aria-hidden>🔒</div>
         <h1>Receipt Vault</h1>
-        <p>Enter your PIN to unlock. Everything stays on this device.</p>
+        <p>{t('Enter your PIN to unlock. Everything stays on this device.')}</p>
         <input
           type="password" inputMode="numeric" autoFocus
           value={pin} onChange={e => setPin(e.target.value.replace(/\D/g, '').slice(0, 6))}
           onKeyDown={e => { if (e.key === 'Enter') submit(); }}
-          placeholder="PIN"
+          placeholder={t('PIN')}
         />
         {error && <p className="error" role="alert">{error}</p>}
-        <button className="btn primary" onClick={submit}>Unlock</button>
+        <button className="btn primary" onClick={submit}>{t('Unlock')}</button>
         {bioAvailable && (
           <button className="btn" onClick={async () => {
             try {
               if (await unlockWithWebAuthn(settings.webauthnCredentialId!)) {
                 sessionStorage.setItem('rv-unlocked', '1');
                 onUnlock();
-              } else setError('Fingerprint / Face ID not recognised.');
-            } catch { setError('Fingerprint / Face ID not recognised.'); }
-          }}>👆 Unlock with fingerprint / Face ID</button>
+              } else setError(t('Fingerprint / Face ID not recognised.'));
+            } catch { setError(t('Fingerprint / Face ID not recognised.')); }
+          }}>{t('Unlock with fingerprint / Face ID')}</button>
         )}
       </div>
     </div>
@@ -82,13 +83,13 @@ function LockScreen({ settings, onUnlock }: { settings: Awaited<ReturnType<typeo
 }
 
 const NAV = [
-  { name: 'overview', icon: '🏠', label: 'Overview' },
-  { name: 'calendar', icon: '📅', label: 'Calendar' },
-  { name: 'items', icon: '🧾', label: 'Items' },
-  { name: 'inbox', icon: '📥', label: 'Inbox' },
-  { name: 'assistants', icon: '🤖', label: 'Assistants' },
-  { name: 'review', icon: '📊', label: 'Review' },
-  { name: 'settings', icon: '⚙️', label: 'Settings' }
+  { name: 'overview', icon: '🏠', labelKey: 'Overview' },
+  { name: 'calendar', icon: '📅', labelKey: 'Calendar' },
+  { name: 'items', icon: '🧾', labelKey: 'Items' },
+  { name: 'inbox', icon: '📥', labelKey: 'Inbox' },
+  { name: 'assistants', icon: '🤖', labelKey: 'Assistants' },
+  { name: 'review', icon: '📊', labelKey: 'Review' },
+  { name: 'settings', icon: '⚙️', labelKey: 'Settings' }
 ];
 
 export default function App() {
@@ -111,9 +112,22 @@ export default function App() {
     if (storagePersistSupported()) {
       navigator.storage.persist().catch(() => {});
     }
+    ensureSettings();
+    if (window.location.search.includes('seed=1')) {
+      import('./lib/seed').then(m => m.loadExampleData());
+    }
+    const langParam = new URLSearchParams(window.location.search).get('lang');
+    if (langParam) {
+      getSettings().then(s => db.settings.put({ ...s, language: langParam }));
+    }
   }, []);
 
   const showInstallHint = isIOS() && !isStandalone();
+
+  useEffect(() => {
+    if (!settings) return;
+    setLang(settings.language || 'en');
+  }, [settings?.language]);
 
   useEffect(() => {
     if (!settings) return;
@@ -141,7 +155,7 @@ export default function App() {
       case 'settings': return <SettingsScreen />;
       default: return <Overview />;
     }
-  }, [route]);
+  }, [route, settings?.language]);
 
   if (settings && settings.lockEnabled && !unlocked) {
     return <LockScreen settings={settings} onUnlock={() => setUnlocked(true)} />;
@@ -150,14 +164,14 @@ export default function App() {
   return (
     <div className="app">
       {showInstallHint && (
-        <div className="banner info install-hint">📱 On iPhone: tap <b>Share</b> → <b>Add to Home Screen</b> to install Receipt Vault as an app.</div>
+        <div className="banner info install-hint">📱 {t('On iPhone: tap Share → Add to Home Screen to install Receipt Vault as an app.')}</div>
       )}
       <header className="topbar">
         <span className="brand">🧾 Receipt Vault</span>
         <nav className="nav">
           {NAV.map(n => (
             <a key={n.name} href={`#/${n.name}`} className={route.name === n.name ? 'active' : ''}>
-              <span aria-hidden>{n.icon}</span> {n.label}
+              <span aria-hidden>{n.icon}</span> {t(n.labelKey)}
             </a>
           ))}
         </nav>
