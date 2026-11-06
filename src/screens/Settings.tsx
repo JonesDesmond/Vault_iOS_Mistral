@@ -11,6 +11,7 @@ import { loadExampleData, removeExampleData, hasExampleData } from '../lib/seed'
 import { hashPin } from '../lib/crypto';
 import { storagePersistSupported, isIOS } from '../lib/compat';
 import { LANGS, t } from '../lib/i18n';
+import { AI_PROVIDERS, type AISettings } from '../lib/ai';
 import { Field } from '../components/ui';
 
 export default function SettingsScreen() {
@@ -31,6 +32,8 @@ export default function SettingsScreen() {
   const [limitMode, setLimitMode] = useState<'fixed' | 'percentOfIncome'>('fixed');
   const [limitAmount, setLimitAmount] = useState('');
   const [limitPercent, setLimitPercent] = useState('');
+  const ai: AISettings = settings?.ai ?? { enabled: false, provider: 'mistral', model: '', apiKey: '', baseUrl: '', localMode: 'ollama' };
+  const setAi = (patch: Partial<AISettings>) => update({ ai: { ...ai, ...patch } });
 
   if (!settings || !items || !methods) return <p className="muted">{t('Loading…')}</p>;
 
@@ -222,6 +225,52 @@ export default function SettingsScreen() {
           }}>🛡 {t('Ask browser to keep data permanently')}</button>
         </div>
         <p className="muted">{t('Last backup:')} {settings.lastBackupAt ? new Date(settings.lastBackupAt).toLocaleString() : t('never')}</p>
+      </div>
+
+      <div className="card">
+        <h3>✨ AI receipt scanning (optional)</h3>
+        <div className="banner danger" role="alert">
+          ⚠ Off by default. When you enable this, the receipt <b>photo leaves your device</b> and is sent
+          only to the provider you choose below (or your own local server). Without this enabled,
+          scanning is 100% on-device and nothing is ever uploaded.
+        </div>
+        <Field label="Enable AI scanning">
+          <select value={ai.enabled ? '1' : '0'} onChange={e => setAi({ enabled: e.target.value === '1' })}>
+            <option value="0">Off (on-device OCR only)</option>
+            <option value="1">On — I understand the photo is sent to my chosen provider</option>
+          </select>
+        </Field>
+        {ai.enabled && (
+          <>
+            <Field label="AI provider">
+              <select value={ai.provider} onChange={e => setAi({ provider: e.target.value as AISettings['provider'] })}>
+                {AI_PROVIDERS.map(p => <option key={p.id} value={p.id}>{p.label}</option>)}
+              </select>
+            </Field>
+            <p className="muted">{AI_PROVIDERS.find(p => p.id === ai.provider)?.hint}</p>
+            <div className="field-row">
+              <Field label="Model"><input value={ai.model} placeholder={AI_PROVIDERS.find(p => p.id === ai.provider)?.defaultModel} onChange={e => setAi({ model: e.target.value })} /></Field>
+              <Field label={ai.provider === 'local' ? 'Server URL' : 'API key (stored only on this device)'}>
+                <input type={ai.provider === 'local' ? 'text' : 'password'} value={ai.provider === 'local' ? ai.baseUrl : ai.apiKey}
+                  placeholder={ai.provider === 'local' ? 'http://192.168.1.10:11434' : 'sk-…'}
+                  onChange={e => ai.provider === 'local' ? setAi({ baseUrl: e.target.value }) : setAi({ apiKey: e.target.value })} />
+              </Field>
+            </div>
+            {ai.provider === 'local' && (
+              <>
+                <Field label="API key (only if your local server requires one)">
+                  <input type="password" value={ai.apiKey} onChange={e => setAi({ apiKey: e.target.value })} />
+                </Field>
+                <Field label="Local server type">
+                  <select value={ai.localMode} onChange={e => setAi({ localMode: e.target.value as AISettings['localMode'] })}>
+                    <option value="ollama">Ollama (/api/chat)</option>
+                    <option value="openai-compat">OpenAI-compatible, e.g. LM Studio (/v1/chat/completions)</option>
+                  </select>
+                </Field>
+              </>
+            )}
+          </>
+        )}
       </div>
 
       <div className="card">

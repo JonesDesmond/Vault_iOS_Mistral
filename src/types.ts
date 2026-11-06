@@ -121,11 +121,21 @@ export interface SpendingLimit {
   percent?: number; // % of monthly income
 }
 
+export interface AIConfig {
+  enabled: boolean;
+  provider: 'mistral' | 'openai' | 'anthropic' | 'gemini' | 'local';
+  model: string;
+  apiKey: string;
+  baseUrl: string;
+  localMode: 'ollama' | 'openai-compat';
+}
+
 export interface Settings {
   id: 'settings';
   monthlyIncome?: number;
   currency: string;
   language: string;
+  ai?: AIConfig;
   limits: SpendingLimit[];
   lockEnabled: boolean;
   pinSalt?: string;

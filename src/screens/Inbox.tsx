@@ -4,6 +4,7 @@ import { db, getSettings, uid } from '../db';
 import type { InboxFile, PurchaseItem, ParsedReceipt } from '../types';
 import { ocrImage } from '../lib/ocr';
 import { parseReceiptText } from '../lib/receipt';
+import { AI_PROVIDERS, blobToDataURL, callVisionAI } from '../lib/ai';
 import { shrinkImage, makeThumb } from '../lib/images';
 import { todayISO } from '../lib/dates';
 import { formatMoney } from '../lib/money';
@@ -29,6 +30,28 @@ export default function Inbox() {
     } catch (e) {
       setScanning(null);
       alert('Scanning failed: ' + (e as Error).message);
+    }
+  };
+
+  const scanWithAI = async (f: InboxFile) => {
+    const ai = settings.ai;
+    if (!ai?.enabled) return;
+    const providerLabel = AI_PROVIDERS.find(p => p.id === ai.provider)?.label ?? ai.provider;
+    const target = ai.provider === 'local' ? (ai.baseUrl || 'local server') : providerLabel;
+    if (!confirm(`⚠ This sends the photo to ${target}. Only do this if you trust that provider. Continue?`)) return;
+    setScanning(f.id);
+    setProgress(`Sending to ${target}…`);
+    try {
+      const shrunk = await shrinkImage(f.blob, 1600, 0.8);
+      const dataUrl = await blobToDataURL(shrunk);
+      const [meta, b64] = dataUrl.split(',');
+      const mime = meta.match(/data:(.*?);/)?.[1] ?? 'image/jpeg';
+      const parsed = await callVisionAI(ai, mime, b64);
+      await db.inbox.update(f.id, { parsed });
+      setScanning(null);
+    } catch (e) {
+      setScanning(null);
+      alert('AI scan failed: ' + (e as Error).message);
     }
   };
 
@@ -88,6 +111,11 @@ export default function Inbox() {
             <div className="btn-row">
               {f.type.startsWith('image/') && !f.parsed && (
                 <button className="btn primary" disabled={scanning !== null} onClick={() => scan(f)}>🔍 {t('Scan receipt (on-device)')}</button>
+              )}
+              {f.type.startsWith('image/') && !f.parsed && settings.ai?.enabled && (
+                <button className="btn" disabled={scanning !== null} onClick={() => scanWithAI(f)} title="Photo is sent to the provider you configured in Settings">
+                  ✨ Scan with AI ({AI_PROVIDERS.find(p => p.id === settings.ai!.provider)?.label}) — sends photo ⚠
+                </button>
               )}
               <button className="btn primary" onClick={() => createPurchase(f)}>➕ {t('Create purchase from this')}</button>
               <button className="btn danger" onClick={() => db.inbox.delete(f.id)}>🗑 {t('Delete')}</button>
