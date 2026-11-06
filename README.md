@@ -27,8 +27,10 @@ Only package downloads from the public npm registry were needed: `npm install`
 (React, Dexie, tesseract.js, the Excel library, build tools) and the tesseract
 OCR engine files (WASM core + German/English language data), which are now bundled
 in this repository under `public/ocr/`. **The finished app itself contacts no outside
-server.** Nothing was published anywhere; the GitHub Pages workflow in
-`.github/workflows/pages.yml` only runs when you manually click "Run workflow".
+server — the only exception is the optional AI scanning mode, which sends the photo
+to the provider you explicitly configure and enable.** Nothing was published anywhere;
+the GitHub Pages workflow in `.github/workflows/pages.yml` only runs when you manually
+click "Run workflow".
 
 ## Run it on Windows 11
 
@@ -116,6 +118,19 @@ What to expect on a 6s:
 - Face ID / Touch ID unlock needs iOS 16.4+, so on a 6s the PIN lock is used.
 - "Keep data permanently" is supported on iOS from version 17; on iOS 15 the button explains this.
 - Encrypted backups (AES-256-GCM) work even over plain http thanks to the bundled pure-JS fallback.
+
+## Optional AI receipt scanning (off by default)
+
+Settings → **AI receipt scanning (optional)**. Choose a provider: **Mistral AI**,
+**ChatGPT (OpenAI)**, **Claude (Anthropic)**, **Gemini (Google)**, or **your own local
+AI server** (Ollama `http://<pc>:11434` or LM Studio `http://localhost:1234`, vision model
+e.g. `llava`). Enter the model and API key (stored only in this device's local database).
+
+- **Off by default.** On-device Tesseract OCR remains the standard and never uploads anything.
+- When enabled, the Inbox shows an extra "✨ Scan with AI" button that asks for confirmation
+  every time: the photo is then sent **only** to the endpoint you configured. `src/lib/ai.ts`
+  is the only module in the app that can build an external URL; its request builders and
+  response parsing are covered by automated tests (`src/lib/ai.test.ts`).
 
 ## Languages
 

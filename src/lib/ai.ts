@@ -19,7 +19,7 @@ export interface AISettings {
 }
 
 export const AI_PROVIDERS: { id: AIProvider; label: string; defaultModel: string; hint: string }[] = [
-  { id: 'mistral', label: 'Mistral AI', defaultModel: 'pixtral-12b-2409', hint: 'API key from console.mistral.ai — sent to api.mistral.ai' },
+  { id: 'mistral', label: 'Mistral AI', defaultModel: 'mistral-small-latest', hint: 'API key from console.mistral.ai — sent to api.mistral.ai' },
   { id: 'openai', label: 'ChatGPT (OpenAI)', defaultModel: 'gpt-4o-mini', hint: 'API key from platform.openai.com — sent to api.openai.com' },
   { id: 'anthropic', label: 'Claude (Anthropic)', defaultModel: 'claude-3-5-sonnet-latest', hint: 'API key from console.anthropic.com — sent to api.anthropic.com' },
   { id: 'gemini', label: 'Gemini (Google)', defaultModel: 'gemini-1.5-flash', hint: 'API key from aistudio.google.com — sent to generativelanguage.googleapis.com' },
@@ -57,7 +57,7 @@ export function buildRequest(cfg: AISettings, mime: string, imageB64: string, pr
       url: 'https://api.mistral.ai/v1/chat/completions',
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${cfg.apiKey}` },
       body: JSON.stringify({
-        model: cfg.model || 'pixtral-12b-2409',
+        model: cfg.model || 'mistral-small-latest',
         max_tokens: 400,
         messages: [{ role: 'user', content: [
           { type: 'text', text: prompt },

@@ -16,10 +16,10 @@ describe('buildRequest per provider', () => {
     expect(body.messages[0].content[0].text).toBe('prompt');
   });
 
-  it('Mistral: api.mistral.ai with pixtral default', () => {
+  it('Mistral: api.mistral.ai with mistral-small-latest default', () => {
     const r = buildRequest(baseCfg({ provider: 'mistral' }), 'image/jpeg', 'QUJD');
     expect(r.url).toBe('https://api.mistral.ai/v1/chat/completions');
-    expect(JSON.parse(r.body).model).toBe('pixtral-12b-2409');
+    expect(JSON.parse(r.body).model).toBe('mistral-small-latest');
   });
 
   it('Anthropic / Claude: x-api-key header, base64 image source block', () => {
