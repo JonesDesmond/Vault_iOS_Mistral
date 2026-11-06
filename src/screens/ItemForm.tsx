@@ -17,7 +17,7 @@ const INTERVALS = [
 ];
 
 export default function ItemForm({ kind, editId }: { kind?: ItemKind; editId?: string }) {
-  const existing = useLiveQuery(async () => (editId ? await db.items.get(editId) : undefined), [editId]);
+  const existing = useLiveQuery(async () => (editId ? (await db.items.get(editId)) ?? null : null), [editId]);
   const items = useLiveQuery(() => db.items.toArray());
   const methods = useLiveQuery(() => db.paymentMethods.toArray());
   const settings = useLiveQuery(() => getSettings());
